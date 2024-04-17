@@ -1,0 +1,269 @@
+( Dynamic memory allocation integration tests )
+
+( Author: Artemis Asadivand )
+( Student ID: [2882797a )
+( Description: This file contains integration tests for dynamic memory allocation using pages and a bitmap. It includes tests for malloc() and free() functions. )
+
+( Status Report: The program is definetely not functional. )
+
+(
+ Dynamic memory allocation using pages and a bitmap
+)
+
+|0000
+( zero page, used for temporary storage )
+
+|0100
+(
+Run your integration tests here
+)
+BRK
+
+(( define your integration tests here )
+: integration-tests ( -- )
+    \ Test malloc and free functions
+    
+    \ Test malloc with various allocation sizes
+    ." Testing malloc with various allocation sizes:" cr
+    1 55 DO
+        DUP ." Allocation size: " malloc . cr
+    LOOP
+    
+    \ Test free with specific pointers
+    ." Testing free with specific pointers:" cr
+    \ Example pointers obtained from previous malloc tests
+    30 40 50 DO
+        ." Freeing pointer: " DUP 2DUP free . cr
+    LOOP
+    
+    \ Add more test cases as needed
+    
+    ." Integration tests completed." cr
+;
+
+( definitions of malloc, free and functions used to implement them )
+@malloc ( n_bytes -- <allocation in bytes> )
+    DUP2 #0000 EQU2 ,&return_null JCN
+    SWP2 PAGE_SZ DIV2
+    DUP2
+    &loop
+        DUP2
+        DUP2 &alloc_sz_is_free_at_idx
+        DUP2 #0000 EQU2 ,&next_page JCN
+        SWP2 &claim_alloc_sz_at_idx
+        #f000 ADD2 JMP2
+        &next_page
+        #0001 ADD2
+        DUP2
+        DUP2 #0100 LTH2 ,&loop JCN
+    &return_null
+    POP2 POP2 #0000 JMP2
+
+@free ( ptr n_bytes )
+    SWP2 #f000 SUB2 PAGE_SZ DIV2
+    SWP2
+    #0001 SUB2 PAGE_SZ DIV2
+    SWP2
+    &free_alloc_sz_at_idx JMP2
+
+@get_bit ( idx -- bit )
+    DUP #08 AND 0x0001 SWP #02 SFT SWP #ff AND SWP #00 NEQ JMP2 NOT JMP
+
+@set_bit ( idx -- )
+    DUP #08 AND SWP #02 SFT SWP #00 OR SWP
+
+@clear_bit ( idx -- )
+    DUP #08 AND SWP #02 SFT NOT SWP #00 AND SWP
+
+( allocation size is in pages )
+@alloc_sz_is_free_at_idx ( idx alloc_sz -- 00 or 01 )
+    SWP #f000 SUB2 PAGE_SZ DIV2 SWP
+    SWP #0001 SUB2 PAGE_SZ DIV2 #0001 ADD2 SWP
+    ; Calculate allocation size in pages and page index
+    DUP #00 EQ JMP2 #00 JMP
+    SWP #00 NEQ JMP2 #00 JMP
+
+@claim_alloc_sz_at_idx ( idx alloc_sz ) 
+      SWP #f000 SUB2 PAGE_SZ DIV2 SWP
+    SWP #0001 SUB2 PAGE_SZ DIV2 #0001 ADD2 SWP
+    ; Calculate allocation size in pages and page index
+    SWP2 DUP2 #00
+    ; Stash bitmap index and allocation size
+    @loop
+        OVER #00 NEQ JMP2 #exit JMP
+        DUP2 DUP #ff
+        ; Check if current bitmap index is free
+        @claim
+            OVER #ff NOT AND JMP2 #next JMP
+            SWP #ff OR SWP #00
+            ; Set bit in bitmap to indicate allocation
+            #next ADD2 #01 SWP #00
+            ; Move to next bitmap index
+            JMP2 @loop
+        @next
+            ADD2 #01 SWP #00
+            ; Move to next bitmap index
+            JMP2 @loop
+    @exit DROP2 DROP2
+
+@free_alloc_sz_at_idx ( idx alloc_sz ) 
+    SWP #f000 SUB2 PAGE_SZ DIV2 SWP
+    SWP #0001 SUB2 PAGE_SZ DIV2 #0001 ADD2 SWP
+    ; Calculate allocation size in pages and page index
+    SWP2 DUP2 #00
+    ; Stash bitmap index and allocation size
+    @loop
+        OVER #00 NEQ JMP2 #exit JMP
+        DUP2 DUP #ff
+        ; Check if current bitmap index is allocated
+        @free
+            OVER #ff NOT AND JMP2 #next JMP
+            SWP #ff NOT AND SWP #00
+            ; Clear bit in bitmap to free allocation
+            #next ADD2 #01 SWP #00
+            ; Move to next bitmap index
+            JMP2 @loop
+        @nextis
+            ADD2 #01 SWP #00
+            ; Move to next bitmap index
+            JMP2 @loop
+    @exit DROP2 DROP2
+
+( ==================================================== )
+( Functions for printing )
+@todo { 0005 "TODO 0a } STH2r print-str JMP2r
+
+@print-bit #30 ADD #18 DEO JMP2r
+@nl #0a18 DEO JMP2r
+@ws #2018 DEO JMP2r
+
+@print8 ( b -: )
+    DUP
+    DUP
+    lonib
+    h2a
+    SWP
+    hinib
+    h2a
+    #18 DEO #18 DEO
+    JMP2r
+
+@print16 ( a* -: )
+    SWP
+    print8
+    print8
+    JMP2r
+
+@lonib ( a -: b )
+    #0f AND
+    JMP2r
+
+@hinib ( a -: b )
+    #04 SFT
+    JMP2r
+
+@h2a ( a -: b )
+    DUP
+    #0a LTH
+    DUP
+    #01 SWP SUB
+    #57 MUL
+    SWP
+    #30 MUL
+    ADD 
+    ADD
+    JMP2r
+
+@print8-dec
+    DUP
+    DUP #64  LTH ,&d2 JCN 
+    #64 DIV DUP #30 ADD #18 DEO
+    #64 MUL SUB
+    DUP
+    &d2
+    DUP #0a  LTH ,&d3 JCN
+    #0a DIV DUP #30 ADD #18 DEO
+    #0a MUL SUB
+    DUP
+    &d3
+    #30 ADD #18 DEO
+    POP
+JMP2r
+
+@print16-dec
+    DUP2
+    DUP2 #2710 LTH2 ,&d2 JCN
+    #2710 DIV2 DUP #30 ADD #18 DEO
+    #2710 MUL2 SUB2
+    DUP2
+    ,&d2_0 JMP
+    &d3_0
+    #0064 DIV2 DUP #30 ADD #18 DEO
+    #0064 MUL2 SUB2
+    DUP2
+    ,&d4
+    &d2
+    DUP2 #03e8  LTH2 ,&d3 JCN
+    #03e8 DIV2 DUP #30 ADD #18 DEO
+    #03e8 MUL2 SUB2
+    DUP2
+    ,&d3
+    DUP2 #0064  LTH2 ,&d4 JCN
+    #0064 DIV2 DUP #30 ADD #18 DEO
+    #0064 MUL2 SUB2
+    DUP2
+    ,&d4
+    #000a DIV2 DUP #30 ADD #18 DEO
+    #000a MUL2 SUB2
+    JMP2r
+
+@print16-dec-NOK
+    DUP2
+    DUP2 #2710 LTH2 ,&d2 JCN
+    #2710 DIV2 DUP #30 ADD #18 DEO
+    #2710 MUL2 SUB2
+    DUP2
+    &d2
+    DUP2 #03e8  LTH2 ,&d3 JCN
+    #03e8 DIV2 DUP #30 ADD #18 DEO
+    #03e8 MUL2 SUB2
+    DUP2
+    ,&d3
+    DUP2 #0064  LTH2 ,&d4 JCN
+    #0064 DIV2 DUP #30 ADD #18 DEO
+    #0064 MUL2 SUB2
+    DUP2
+    ,&d4
+    DUP2 #000a DIV2 DUP #30 ADD #18 DEO
+    #000a MUL2 SUB2
+JMP2r
+
+@print-str ( a* -: )
+    LDA2k
+    SWP2 #0002 ADD2 SWP2
+    DUP2
+    &loop
+    #0000 EQU2 ,&exit JCN
+    SWP2
+    LDAk #18 DEO
+    INC2 SWP2 #0001 SUB2 DUP2
+    ,&loop JMP
+    &exit
+    POP2 POP2 POP2
+JMP2r
+
+( example strings )
+@invalid-str 000f "Invalid 20 "access:
+@outside-str 0016 "Outside 20 "of 20 "page 20 "range:
+
+( END of functions for printing and strings )
+( ==================================================== )
+
+@PAGE_SZ ( -: a* ) #0010 JMP2r
+@N_PAGES ( -: a* ) #0100 JMP2r
+@DMEM_START ( -: a* ) #f000 JMP2r
+
+@bitmap $40
+
+|f000
+@dmem

@@ -1,0 +1,212 @@
+( Unit tests for dynamic memory allocation )
+
+( Import necessary constants and subroutines from the main program file )
+
+@import DynamicMemoryAllocReference
+
+( Define unit tests for each subroutine )
+
+@testMaskClear ( -: )
+    ( Test mask_clear(bit_idx) )
+    mask_clear(0x000)
+    #fe NEQ2 ,&fail JCN
+    mask_clear(0x0001)
+    #fd NEQ2 ,&fail JCN
+    mask_clear(0x0002)
+    #fb NEQ2 ,&fail JCN
+    mask_clear(0x0003)
+    #f7 NEQ2 ,&fail JCN
+    mask_clear(0x0004)
+    #ef NEQ2 ,&fail JCN
+    mask_clear(0x0005)
+    #df NEQ2 ,&fail JCN
+    mask_clear(0x0006)
+    #bf NEQ2 ,&fail JCN
+    mask_clear(0x0007)
+    #7f NEQ2 ,&fail JCN
+    ;pass JMP2
+
+    &fail
+    HALT
+
+@testMaskSet ( -: )
+    ( Test mask_set(bit_idx) )
+    mask_set(0x0000)
+    #01 NEQ2 ,&fail JCN
+    mask_set(0x0001)
+    #02 NEQ2 ,&fail JCN
+    mask_set(0x0002)
+    #04 NEQ2 ,&fail JCN
+    mask_set(0x0003)
+    #08 NEQ2 ,&fail JCN
+    mask_set(0x0004)
+    #10 NEQ2 ,&fail JCN
+    mask_set(0x0005)
+    #20 NEQ2 ,&fail JCN
+    mask_set(0x0006)
+    #40 NEQ2 ,&fail JCN
+    mask_set(0x0007)
+    #80 NEQ2 ,&fail JCN
+    ;pass JMP2
+
+    &fail
+    HALT
+
+@testGetBit ( -: )
+    ( Test get_bit(idx) )
+    bitmap[0x0001] = 0x01
+    bitmap[0x0003] = 0x80
+    bitmap[0x0004] = 0x02
+    bitmap[0x0008] = 0x40
+    bitmap[0x000c] = 0x04
+    bitmap[0x000d] = 0x20
+
+    get_bit(0x000f)
+    #00 NEQ2
+    get_bit(0x000e)
+    #01 NEQ2
+    get_bit(24)
+    #00 NEQ2
+    get_bit(25)
+    #01 NEQ2
+    get_bit(38)
+    #00 NEQ2
+    get_bit(39)
+    #01 NEQ2
+    get_bit(65)
+    #00 NEQ2
+    get_bit(66)
+    #01 NEQ2
+    get_bit(101)
+    #00 NEQ2
+    get_bit(102)
+    #01 NEQ2
+    get_bit(106)
+    #00 NEQ2
+    get_bit(107)
+    #00 NEQ2
+
+    bitmap[0x0001] = 0x03
+    bitmap[0x0003] = 0xc0
+    bitmap[0x0004] = 0x06
+    bitmap[0x0008] = 0x60
+    bitmap[0x000c] = 0x0c
+    bitmap[0x000d] = 0x30
+
+    get_bit(0x000f)
+    #01 NEQ2
+    get_bit(0x000e)
+    #00 NEQ2
+    get_bit(24)
+    #01 NEQ2
+    get_bit(25)
+    #00 NEQ2
+    get_bit(38)
+    #01 NEQ2
+    get_bit(39)
+    #00 NEQ2
+    get_bit(65)
+    #01 NEQ2
+    get_bit(66)
+    #00 NEQ2
+    get_bit(101)
+    #01 NEQ2
+    get_bit(102)
+    #00 NEQ2
+    get_bit(106)
+    #01 NEQ2
+    get_bit(107)
+    #00 NEQ2
+
+    ;pass JMP2
+
+@testClearBit ( -: )
+    ( Test clear_bit(idx) )
+    clear_bit(15)
+    clear_bit(14)
+    clear_bit(24)
+    clear_bit(25)
+    clear_bit(38)
+    clear_bit(39)
+    clear_bit(65)
+    clear_bit(66)
+    clear_bit(101)
+    clear_bit(102)
+    clear_bit(106)
+    clear_bit(107)
+
+    get_bit(15)
+    #00 NEQ2
+    get_bit(14)
+    #00 NEQ2
+    get_bit(24)
+    #00 NEQ2
+    get_bit(25)
+    #00 NEQ2
+    get_bit(38)
+    #00 NEQ2
+    get_bit(39)
+    #00 NEQ2
+    get_bit(65)
+    #00 NEQ2
+    get_bit(66)
+    #00 NEQ2
+    get_bit(101)
+    #00 NEQ2
+    get_bit(102)
+    #00 NEQ2
+    get_bit(106)
+    #00 NEQ2
+    get_bit(107)
+    #00 NEQ2
+
+    ;pass JMP2
+
+@testSetBit ( -: )
+    ( Test set_bit(idx) )
+    set_bit(15)
+    set_bit(14)
+    set_bit(24)
+    set_bit(25)
+    set_bit(38)
+    set_bit(39)
+    set_bit(65)
+    set_bit(66)
+    set_bit(101)
+    set_bit(102)
+    set_bit(106)
+    set_bit(107)
+
+    get_bit(15)
+    #01 NEQ2
+    get_bit(14)
+    #01 NEQ2
+    get_bit(24)
+    #01 NEQ2
+    get_bit(25)
+    #01 NEQ2
+    get_bit(38)
+    #01 NEQ2
+    get_bit(39)
+    #01 NEQ2
+    get_bit(65)
+    #01 NEQ2
+    get_bit(66)
+    #01 NEQ2
+    get_bit(101)
+    #01 NEQ2
+    get_bit(102)
+    #01 NEQ2
+    get_bit(106)
+    #01 NEQ2
+    get_bit(107)
+    #01 NEQ2
+
+    ;pass JMP2
+
+@testAllocSzIsFreeAtIdx ( -: )
+    ( Test alloc_sz_is_free_at_idx(idx, alloc_sz) )
+    ( Define test cases to verify the behavior of alloc_sz_is_free_at_idx(idx, alloc_sz) )
+
+@testClaimAllocSzAtIdx ( -: )
+    ( Test claim_alloc_sz_at_idx(idx,
